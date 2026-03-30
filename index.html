@@ -354,6 +354,7 @@
                     }
                     else if (gameState.phase === 'finished') { playSfx(sfx.win); playSfx(sfx.cheer); createConfetti(); }
                     else if (gameState.phase === 'picking') playSfx(sfx.pop);
+                    else if (gameState.phase === 'chits_tossed') { triggerChitAnimation(); }
                 }
                 
                 handlePhaseRouting();
@@ -429,28 +430,13 @@
 
             // Auto-advance Host logic
             if (amIHost && gameState.phase === 'round_result') {
-        onValue(ref(db, `rooms/${roomId}/state`), (snap) => {
-            const s = snap.val();
-            if (s) {
-                let oldPhase = gameState.phase;
-                gameState = { 
-                    phase: s.phase || 'lobby', round: s.round || 1, scores: s.scores || {}, 
-                    roles: s.roles || {}, turnOrder: s.turnOrder || [], 
-                    revealed: s.revealed || {}, wazirCorrect: s.wazirCorrect, suspectId: s.suspectId
-                };
-                
-                if (oldPhase !== gameState.phase) {
-                    if (gameState.phase === 'king_declaring') playSfx(sfx.start);
-                    else if (gameState.phase === 'round_result') {
-                        if (gameState.wazirCorrect) { playSfx(sfx.win); playSfx(sfx.cheer); } else playSfx(sfx.alert);
-                    }
-                    else if (gameState.phase === 'finished') { playSfx(sfx.win); playSfx(sfx.cheer); createConfetti(); }
-                    else if (gameState.phase === 'chits_tossed') { triggerChitAnimation(); }
-                }
-                
-                handlePhaseRouting();
-            }
-        });
+                setTimeout(() => {
+                    get(ref(db, `rooms/${roomId}/state/phase`)).then(snap => {
+                        if (snap.val() === 'round_result') {
+                            if (gameState.round < 12) window.startRound(gameState.round + 1);
+                            else updateState({ phase: 'finished' });
+                        }
+                    });
                 }, 5000);
             }
         }
