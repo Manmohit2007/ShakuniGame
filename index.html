@@ -53,6 +53,13 @@
             font-size: 16px; font-weight: 500; margin-bottom: 12px; transition: 0.3s ease; 
         }
         input:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25); }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active {
+            transition: background-color 5000s ease-in-out 0s;
+            -webkit-text-fill-color: white !important;
+        }
         input::placeholder { color: #ffffff; opacity: 1; font-weight: 600; }
 
         button { 
@@ -141,7 +148,7 @@
 <div class="app-container">
     <div id="view-login" class="view-centered">
         <h1>Shakuni</h1>
-        <div class="subtitle">Raja Mantri Chor Santri</div>
+        <div class="subtitle">Raja • Mantri • Chor • Santri</div>
         <div class="glass-card">
             <input type="text" id="userName" placeholder="Enter Your Nickname" maxlength="12">
             <button class="btn-primary" onclick="joinGame()">Enter Lobby</button>
@@ -526,9 +533,9 @@
             hub.style.borderColor = COLORS[colorIdx];
             hub.classList.add('anim-pulse');
             
-            if (myKey === currentPid || amIHost) {
+            if (myKey === currentPid) {
                 hub.innerHTML = `
-                    <div style="font-size:16px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${myKey === currentPid ? 'Your Turn!' : 'Host Override'}</div>
+                    <div style="font-size:16px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Your Turn!</div>
                     <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="tossChits()">Toss Chits 📜</button>
                 `;
             } else {
@@ -538,7 +545,7 @@
         else if (gameState.phase === 'chits_tossed') {
             hub.style.backgroundColor = `${COLORS[colorIdx]}66`; 
             hub.style.borderColor = COLORS[colorIdx];
-            hub.innerHTML = `<div style="font-size:20px; font-weight:900; animation: pulseHub 1s infinite; line-height: 1.4; text-shadow: 0 2px 5px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; width:100%; height:100%;">Tossing<br>Chits...</div>`;
+            hub.innerHTML = `<div style="font-size:20px; font-weight:900; animation: pulseHub 1s infinite; line-height: 1.4; text-shadow: 0 2px 5px rgba(0,0,0,0.8); text-align:center;">Tossing<br>Chits...</div>`;
         }
         else if (gameState.phase === 'king_declaring') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
