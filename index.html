@@ -475,7 +475,12 @@
 
     function renderGameUI() {
         document.getElementById('roundIndicator').innerText = `ROUND ${gameState.round} / 12`;
-        const pids = (gameState.turnOrder && gameState.turnOrder.length === 4) ? gameState.turnOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
+        
+        // Force parsing as array to fix Firebase converting arrays into objects
+        let tOrder = gameState.turnOrder || [];
+        if (!Array.isArray(tOrder)) tOrder = Object.keys(tOrder).sort().map(k => tOrder[k]);
+        
+        const pids = (tOrder.length === 4) ? tOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
         
         for (let i = 0; i < 4; i++) {
             const quad = document.getElementById(`quadrant-${i}`);
@@ -521,13 +526,18 @@
 
     function renderHub() {
         const hub = document.getElementById('central-hub');
-        const pids = (gameState.turnOrder && gameState.turnOrder.length === 4) ? gameState.turnOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
+        
+        // Force parsing as array here as well
+        let tOrder = gameState.turnOrder || [];
+        if (!Array.isArray(tOrder)) tOrder = Object.keys(tOrder).sort().map(k => tOrder[k]);
+        
+        const pids = (tOrder.length === 4) ? tOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
         
         hub.classList.remove('anim-pulse');
 
         // Determine whose turn it is to toss chits based on the current round (rotates every round)
         const currentTosserIndex = (gameState.round - 1) % 4;
-        const currentPid = (gameState.turnOrder && gameState.turnOrder.length > 0) ? gameState.turnOrder[currentTosserIndex] : pids[0];
+        const currentPid = (tOrder.length > 0) ? tOrder[currentTosserIndex] : pids[0];
         const colorIdx = pids.indexOf(currentPid) !== -1 ? pids.indexOf(currentPid) : 0;
 
         if (gameState.phase === 'picking') {
@@ -538,7 +548,7 @@
             if (myKey === currentPid) {
                 hub.innerHTML = `
                     <div style="font-size:16px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Your Turn!</div>
-                    <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="tossChits()">Toss Chits 📜</button>
+                    <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="window.tossChits()">Toss Chits 📜</button>
                 `;
             } else {
                 hub.innerHTML = `<div style="font-size:15px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Waiting for<br><span style="font-size:18px; color:#ffffff">${globalPlayers[currentPid]?.name}</span></div>`;
@@ -547,7 +557,8 @@
         else if (gameState.phase === 'chits_tossed') {
             hub.style.backgroundColor = `${COLORS[colorIdx]}66`; 
             hub.style.borderColor = COLORS[colorIdx];
-            hub.innerHTML = `<div style="font-size:20px; font-weight:900; animation: pulseHub 1s infinite; line-height: 1.4; text-shadow: 0 2px 5px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; text-align:center; height:100%; width:100%;">Tossing<br>Chits...</div>`;
+            // Removed nested flex styles here to let the parent hub naturally center it perfectly
+            hub.innerHTML = `<div style="font-size:22px; font-weight:900; animation: pulseHub 1s infinite; line-height: 1.3; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Tossing<br>Chits...</div>`;
         }
         else if (gameState.phase === 'king_declaring') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
