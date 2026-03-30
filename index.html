@@ -144,7 +144,7 @@
 </head>
 <body>
 
-<audio id="bgMusic" loop>
+<audio id="bgMusic" loop preload="none">
     <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">
 </audio>
 
@@ -235,21 +235,34 @@
     
     let musicPlaying = false, isSoundInited = false;
     const bgm = document.getElementById('bgMusic'); bgm.volume = 0.15; 
-    const sfx = {
-        pop: new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'), 
-        tick: new Audio('https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3'),
-        start: new Audio('https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3'), 
-        win: new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'), 
-        cheer: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
-        alert: new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3')
+    
+    // Lazy-load audio dictionary to save massive amounts of mobile data
+    const sfxUrls = {
+        pop: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', 
+        tick: 'https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3',
+        start: 'https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3', 
+        win: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3', 
+        cheer: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3',
+        alert: 'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'
     };
-    Object.values(sfx).forEach(sound => sound.volume = 0.6);
-    const playSfx = (sound) => { if(sound && isSoundInited) { const c = sound.cloneNode(); c.volume = sound.volume; c.play().catch(()=>{}); } };
+    const sfxCache = {};
+    
+    const playSfx = (soundName) => { 
+        if(isSoundInited && sfxUrls[soundName]) { 
+            if (!sfxCache[soundName]) {
+                sfxCache[soundName] = new Audio(sfxUrls[soundName]);
+                sfxCache[soundName].volume = 0.6;
+            }
+            const c = sfxCache[soundName].cloneNode(); 
+            c.volume = 0.6; 
+            c.play().catch(()=>{}); 
+        } 
+    };
 
     window.copyInviteLink = function(btn) { 
         const linkInput = document.getElementById('lobbyLinkInput'); 
         linkInput.select(); navigator.clipboard.writeText(linkInput.value); 
-        playSfx(sfx.pop); btn.innerText = "Copied!"; btn.style.background = "var(--success)";
+        playSfx('pop'); btn.innerText = "Copied!"; btn.style.background = "var(--success)";
         setTimeout(() => { btn.innerText = "Copy"; btn.style.background = "var(--accent)"; }, 1500);
     }
 
@@ -274,7 +287,7 @@
         myName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
         
         if (!isAutoJoin) {
-            isSoundInited = true; playSfx(sfx.pop); 
+            isSoundInited = true; playSfx('pop'); 
             if(!musicPlaying) { bgm.play().catch(()=>{}); musicPlaying = true; }
         } else {
             document.body.addEventListener('click', function initAudio() {
@@ -373,12 +386,12 @@
                 };
                 
                 if (oldPhase !== gameState.phase) {
-                    if (gameState.phase === 'king_declaring') playSfx(sfx.start);
+                    if (gameState.phase === 'king_declaring') playSfx('start');
                     else if (gameState.phase === 'round_result') {
-                        if (gameState.wazirCorrect) { playSfx(sfx.win); playSfx(sfx.cheer); } else playSfx(sfx.alert);
+                        if (gameState.wazirCorrect) { playSfx('win'); playSfx('cheer'); } else playSfx('alert');
                     }
-                    else if (gameState.phase === 'finished') { playSfx(sfx.win); playSfx(sfx.cheer); createConfetti(); }
-                    else if (gameState.phase === 'picking') playSfx(sfx.pop);
+                    else if (gameState.phase === 'finished') { playSfx('win'); playSfx('cheer'); createConfetti(); }
+                    else if (gameState.phase === 'picking') playSfx('pop');
                     else if (gameState.phase === 'chits_tossed') { triggerChitAnimation(); }
                     
                     handlePhaseRouting();
@@ -644,7 +657,7 @@
                 const quad = document.getElementById(`quadrant-${i}`);
                 if (!quad) return;
                 
-                playSfx(sfx.tick); 
+                playSfx('tick'); 
                 const quadRect = quad.getBoundingClientRect();
                 
                 const chit = document.createElement('div');
@@ -670,7 +683,7 @@
                 
                 setTimeout(() => { 
                     chit.remove(); 
-                    if(i === Object.keys(globalPlayers).indexOf(myKey)) playSfx(sfx.pop);
+                    if(i === Object.keys(globalPlayers).indexOf(myKey)) playSfx('pop');
                 }, 650);
             }, delay);
         }
@@ -683,13 +696,13 @@
 
     window.declareKing = function() {
         if (gameState.phase !== 'king_declaring' || gameState.roles[myKey] !== 'Raja 👑') return;
-        playSfx(sfx.pop);
+        playSfx('pop');
         updateState({ phase: 'wazir_guessing' });
     }
 
     window.makeGuess = function(suspectId) {
         if (gameState.phase !== 'wazir_guessing' || gameState.roles[myKey] !== 'Mantri 🛡️') return;
-        playSfx(sfx.pop);
+        playSfx('pop');
         
         const isCorrect = (gameState.roles[suspectId] === 'Chor 👺');
         let newScores = { ...gameState.scores };
