@@ -224,11 +224,13 @@
         } catch (e) {}
     }
 
-    const COLORS = ['#FF3B30', '#34C759', '#FFCC00', '#007AFF']; // Red, Green, Yellow, Blue
+    const COLORS = ['#34C759', '#FF3B30', '#007AFF', '#FFCC00']; // Green, Red, Blue, Yellow
     const ROLES = ['Raja 👑', 'Mantri 🛡️', 'Santri ⚔️', 'Chor 👺'];
 
     let myKey = null, myName = "", amIHost = false, globalPlayers = {};
-    let gameState = { phase: 'login', round: 1, scores: {}, roles: {}, turnOrder: [], revealed: {}, wazirCorrect: null, suspectId: null };
+    let gameState = { phase: null, round: 1, scores: {}, roles: {}, turnOrder: [], revealed: {}, wazirCorrect: null, suspectId: null };
+    let wasHost = false;
+    let hostTimeout1, hostTimeout2;
     
     let musicPlaying = false, isSoundInited = false;
     const bgm = document.getElementById('bgMusic'); bgm.volume = 0.15; 
@@ -297,11 +299,17 @@
         if (requestedKey && currentPlayers[requestedKey]) {
             myKey = requestedKey; 
         } else {
-            if (pKeys.length >= 4) {
-                if (!isAutoJoin) alert("Game is full! Exactly 4 players allowed.");
-                return;
+            // Rejoin by EXACT name if cache was lost but they typed the same name
+            const existingKey = Object.keys(currentPlayers).find(k => currentPlayers[k].name.toLowerCase() === myName.toLowerCase());
+            if (existingKey) {
+                myKey = existingKey;
+            } else {
+                if (pKeys.length >= 4) {
+                    if (!isAutoJoin) alert("Game is full! If you are rejoining, use your exact previous name.");
+                    return;
+                }
+                myKey = 'user_' + Math.random().toString(36).substr(2, 9);
             }
-            myKey = 'user_' + Math.random().toString(36).substr(2, 9);
         }
         
         localStorage.setItem(`rmcs_user_${roomId}`, JSON.stringify({ key: myKey, name: myName, joinedAt: joinedTime }));
@@ -336,6 +344,12 @@
                 const oldestKey = onlineKeys.sort((a,b) => globalPlayers[a].joinedAt - globalPlayers[b].joinedAt)[0];
                 amIHost = (oldestKey === myKey);
             } else { amIHost = false; }
+
+            // Watchdog: If host drops and someone else takes over, re-trigger timeouts so game doesn't get stuck
+            if (amIHost && !wasHost && gameState.phase !== null) {
+                handlePhaseRouting(); 
+            }
+            wasHost = amIHost;
             
             renderLobby();
             
@@ -365,9 +379,13 @@
                     else if (gameState.phase === 'finished') { playSfx(sfx.win); playSfx(sfx.cheer); createConfetti(); }
                     else if (gameState.phase === 'picking') playSfx(sfx.pop);
                     else if (gameState.phase === 'chits_tossed') { triggerChitAnimation(); }
+                    
+                    handlePhaseRouting();
+                } else {
+                    // Update UI internally if phase is the same but state changed (e.g., scores updated)
+                    if (gameState.phase !== 'login' && gameState.phase !== 'lobby' && gameState.phase !== 'finished') renderGameUI();
+                    if (gameState.phase === 'finished') renderLeaderboard();
                 }
-                
-                handlePhaseRouting();
             }
         });
 
@@ -413,7 +431,8 @@
     window.startRound = function(roundNum) {
         if (!amIHost) return;
         
-        const activePKeys = Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
+        // Sort players rigorously by joinedAt so quadrants map perfectly to Green, Red, Blue, Yellow order
+        const activePKeys = Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false).sort((a,b) => globalPlayers[a].joinedAt - globalPlayers[b].joinedAt);
         if (activePKeys.length !== 4) {
             alert("Exactly 4 players must be online to play!");
             return;
@@ -444,13 +463,16 @@
         if (gameState.phase === 'finished') {
             switchView('view-result');
             renderLeaderboard();
-        } else if (gameState.phase !== 'login' && gameState.phase !== 'lobby') {
+        } else if (gameState.phase !== 'login' && gameState.phase !== 'lobby' && gameState.phase !== null) {
             switchView('view-game');
             renderGameUI();
             
+            clearTimeout(hostTimeout1);
+            clearTimeout(hostTimeout2);
+            
             if (amIHost && gameState.phase === 'chits_tossed') {
                 // Extended timeout to 3000ms to allow all sequential chits to finish animating
-                setTimeout(() => {
+                hostTimeout1 = setTimeout(() => {
                     get(ref(db, `rooms/${roomId}/state/phase`)).then(snap => {
                         if (snap.val() === 'chits_tossed') {
                             updateState({ phase: 'king_declaring' });
@@ -461,7 +483,7 @@
 
             // Auto-advance Host logic
             if (amIHost && gameState.phase === 'round_result') {
-                setTimeout(() => {
+                hostTimeout2 = setTimeout(() => {
                     get(ref(db, `rooms/${roomId}/state/phase`)).then(snap => {
                         if (snap.val() === 'round_result') {
                             if (gameState.round < 12) window.startRound(gameState.round + 1);
@@ -480,7 +502,8 @@
         let tOrder = gameState.turnOrder || [];
         if (!Array.isArray(tOrder)) tOrder = Object.keys(tOrder).sort().map(k => tOrder[k]);
         
-        const pids = (tOrder.length === 4) ? tOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
+        const allPids = Object.keys(globalPlayers).sort((a,b) => globalPlayers[a].joinedAt - globalPlayers[b].joinedAt);
+        const pids = (tOrder.length === 4) ? tOrder : allPids;
         
         for (let i = 0; i < 4; i++) {
             const quad = document.getElementById(`quadrant-${i}`);
@@ -531,7 +554,8 @@
         let tOrder = gameState.turnOrder || [];
         if (!Array.isArray(tOrder)) tOrder = Object.keys(tOrder).sort().map(k => tOrder[k]);
         
-        const pids = (tOrder.length === 4) ? tOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
+        const allPids = Object.keys(globalPlayers).sort((a,b) => globalPlayers[a].joinedAt - globalPlayers[b].joinedAt);
+        const pids = (tOrder.length === 4) ? tOrder : allPids;
         
         hub.classList.remove('anim-pulse');
 
