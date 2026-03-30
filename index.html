@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Raja Mantri Chor Sipahi</title>
+    <style>
+        :root {
+            --primary: #FF3B30; --success: #34C759; --accent: #007AFF; --warning: #FFCC00;
+            --glass-bg: rgba(255, 255, 255, 0.15); --glass-border: rgba(255, 255, 255, 0.3);
+            --text-main: #FFFFFF; --text-muted: #EBEBEB;
+            --text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            color: var(--text-main); text-shadow: var(--text-shadow);
+            height: 100dvh; overflow: hidden;
+            display: flex; justify-content: center;
+            background: #000 url('desk.png') no-repeat center center fixed; background-size: cover;
+            transition: background 0.5s ease;
+        }
+        @media (orientation: portrait) { body { background-image: url('vert.png'); } }
+
+        .app-container { 
+            width: 100%; max-width: 1200px; height: 100%; 
+            display: flex; flex-direction: column; padding: 15px; 
+            position: relative; z-index: 1; margin: 0 auto;
+            overflow-y: auto; overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        @media (min-width: 768px) { .app-container { padding: 30px; } }
+
+        .view-centered { max-width: 500px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+        .view-centered-wide { max-width: 700px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+
+        .glass-card { 
+            background: var(--glass-bg); backdrop-filter: blur(50px) saturate(150%); -webkit-backdrop-filter: blur(50px) saturate(150%);
+            border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); 
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        h1 { font-size: 42px; font-weight: 800; letter-spacing: -2px; text-align: center; margin-bottom: 4px; }
+        .subtitle { font-size: 15px; font-weight: 500; color: var(--text-muted); text-align: center; margin-bottom: 25px; }
+        
+        input { 
+            width: 100%; background: rgba(255, 255, 255, 0.12); border: 1.5px solid transparent; 
+            padding: 16px; border-radius: 16px; color: #fff; outline: none; text-shadow: none;
+            font-size: 16px; font-weight: 500; margin-bottom: 12px; transition: 0.3s ease; 
+        }
+        input:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25); }
+        input::placeholder { color: #ffffff; opacity: 1; font-weight: 600; }
+
+        button { 
+            width: 100%; padding: 16px; border-radius: 16px; border: none; font-weight: 700; font-size: 16px; 
+            cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.8px; text-shadow: none;
+        }
+        button:active { transform: scale(0.96); }
+        .btn-primary { background: var(--success); color: #fff; box-shadow: 0 8px 20px rgba(52, 199, 89, 0.3); }
+        .btn-danger { background: var(--primary); color: #fff; box-shadow: 0 8px 20px rgba(255, 59, 48, 0.3); }
+        .btn-accent { background: var(--accent); color: #fff; box-shadow: 0 8px 20px rgba(0, 122, 255, 0.3); }
+        .btn-disabled { background: var(--success); opacity: 0.65; color: rgba(255, 255, 255, 0.9); cursor: not-allowed; box-shadow: none; }
+
+        .link-display-container { display: flex; gap: 8px; margin-bottom: 20px; }
+        .link-display-container input { margin-bottom: 0; padding: 12px 16px; color: var(--accent); } 
+        
+        .player-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .p-badge { 
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); 
+            border-radius: 14px; padding: 12px; text-align: center; font-weight: 600; font-size: 14px; 
+            animation: popIn 0.4s ease; transition: opacity 0.4s ease;
+        }
+
+        #view-game { flex: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; position: relative; }
+        
+        .round-indicator { text-align: center; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; height: 30px; }
+        
+        .quadrants-wrapper {
+            position: absolute; top: 40px; left: 0; right: 0; bottom: 0;
+            display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 15px;
+        }
+
+        .player-quadrant {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 24px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: all 0.3s ease; position: relative;
+        }
+
+        .quad-dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.4); }
+        .quad-name { font-size: 18px; font-weight: 800; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .quad-score { margin-top: 5px; font-size: 14px; font-weight: 600; color: var(--text-muted); }
+        .quad-role {
+            margin-top: 15px; padding: 12px 20px; border-radius: 16px; background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1); font-size: 22px; font-weight: 900;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8); min-width: 100px;
+            animation: flipIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .central-hub {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 180px; height: 180px; border-radius: 50%; z-index: 100;
+            background: rgba(255, 255, 255, 0.15); border: 4px solid var(--glass-border);
+            backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(255,255,255,0.2);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 15px; transition: all 0.4s ease;
+        }
+        @media (min-width: 768px) { .central-hub { width: 220px; height: 220px; } }
+
+        .hidden { display: none !important; }
+
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes flipIn { 0% { transform: rotateX(90deg); opacity: 0; } 100% { transform: rotateX(0deg); opacity: 1; } }
+        @keyframes pulseHub { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }
+        .anim-pulse { animation: pulseHub 1.5s infinite ease-in-out; }
+
+        @keyframes confettiFall { 0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; } }
+        .confetti { position: absolute; width: 12px; height: 12px; z-index: 9999; pointer-events: none; border-radius: 2px; animation: confettiFall linear forwards; }
+        
+        .leaderboard-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 18px; font-weight: 700;
+        }
+        .leaderboard-row:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<audio id="bgMusic" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">
+</audio>
+
+<div class="app-container">
+    <div id="view-login" class="view-centered">
+        <h1>RMCS</h1>
+        <div class="subtitle">King • Minister • Thief • Soldier</div>
+        <div class="glass-card">
+            <input type="text" id="userName" placeholder="Enter Your Nickname" maxlength="12">
+            <button class="btn-primary" onclick="joinGame()">Enter Lobby</button>
+        </div>
+    </div>
+
+    <div id="view-lobby" class="view-centered-wide hidden">
+        <div class="glass-card" style="margin-bottom: 15px;">
+            <p style="font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; text-align: center;">🔗 Invite Friends (Need exactly 4 players)</p>
+            <div class="link-display-container">
+                <input type="text" id="lobbyLinkInput" readonly value="">
+                <button class="btn-accent" style="width: auto; padding: 0 20px; font-size: 14px;" onclick="copyInviteLink(this)">Copy</button>
+            </div>
+        </div>
+        
+        <div class="glass-card">
+            <div style="font-size: 40px; text-align: center; margin-bottom: 10px; text-shadow:none;">👑 🛡️ ⚔️ 👺</div>
+            <h2 id="lobbyStatusText" style="font-size: 18px; margin-bottom: 20px; text-align: center;">Waiting for 4 players...</h2>
+            <div class="player-grid" id="lobbyPlayers"></div>
+        </div>
+    </div>
+
+    <div id="view-game" class="hidden">
+        <div class="round-indicator" id="roundIndicator">ROUND 1 / 12</div>
+        
+        <div class="quadrants-wrapper" id="quadrants-wrapper">
+            <div class="player-quadrant" id="quadrant-0"></div>
+            <div class="player-quadrant" id="quadrant-1"></div>
+            <div class="player-quadrant" id="quadrant-2"></div>
+            <div class="player-quadrant" id="quadrant-3"></div>
+        </div>
+
+        <div class="central-hub" id="central-hub"></div>
+    </div>
+
+    <div id="view-result" class="view-centered-wide hidden" style="z-index: 200;">
+        <div class="glass-card" style="text-align: center; animation: popIn 0.5s ease;">
+            <div style="font-size: 70px; margin-bottom: 10px;">🏆</div>
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: #FFD700;">Game Over!</h2>
+            <div id="leaderboard-container" style="background: rgba(0,0,0,0.3); border-radius: 16px; margin-bottom: 25px; text-shadow: none;"></div>
+            <button id="btnPlayAgain" class="btn-primary hidden" onclick="startRound(1)">Play Again (Host)</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getDatabase, ref, set, update, onValue, onDisconnect, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAVREmzFgrnE_1NP9Ke-Ybtynls1Ka-HNk",
+        authDomain: "iogame-145c9.firebaseapp.com",
+        databaseURL: "https://iogame-145c9-default-rtdb.firebaseio.com",
+        projectId: "iogame-145c9",
+        storageBucket: "iogame-145c9.firebasestorage.app",
+        messagingSenderId: "1024963573565",
+        appId: "1:1024963573565:web:907f671f3fad2c56443754"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let roomId = new URLSearchParams(window.location.search).get('room');
+    if (!roomId) {
+        roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('room', roomId);
+            window.history.replaceState({path:url.href}, '', url.href);
+        } catch (e) {}
+    }
+
+    const COLORS = ['#FF3B30', '#34C759', '#FFCC00', '#007AFF']; // Red, Green, Yellow, Blue
+    const ROLES = ['Raja 👑', 'Wazir 🛡️', 'Sipahi ⚔️', 'Chor 👺'];
+
+    let myKey = null, myName = "", amIHost = false, globalPlayers = {};
+    let gameState = { phase: 'login', round: 1, scores: {}, roles: {}, turnOrder: [], pickIndex: 0, revealed: {}, wazirCorrect: null, suspectId: null };
+    
+    let musicPlaying = false, isSoundInited = false;
+    const bgm = document.getElementById('bgMusic'); bgm.volume = 0.15; 
+    const sfx = {
+        pop: new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'), 
+        tick: new Audio('https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3'),
+        start: new Audio('https://assets.mixkit.co/active_storage/sfx/2586/2586-preview.mp3'), 
+        win: new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'), 
+        cheer: new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'),
+        alert: new Audio('https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3')
+    };
+    Object.values(sfx).forEach(sound => sound.volume = 0.6);
+    const playSfx = (sound) => { if(sound && isSoundInited) { const c = sound.cloneNode(); c.volume = sound.volume; c.play().catch(()=>{}); } };
+
+    window.copyInviteLink = function(btn) { 
+        const linkInput = document.getElementById('lobbyLinkInput'); 
+        linkInput.select(); navigator.clipboard.writeText(linkInput.value); 
+        playSfx(sfx.pop); btn.innerText = "Copied!"; btn.style.background = "var(--success)";
+        setTimeout(() => { btn.innerText = "Copy"; btn.style.background = "var(--accent)"; }, 1500);
+    }
+
+    function switchView(viewId) {
+        ['view-login', 'view-lobby', 'view-game', 'view-result'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function createConfetti() {
+        const colors = ['#FF3B30', '#34C759', '#007AFF', '#FFD700', '#FF9500', '#AF52DE'];
+        for (let i = 0; i < 100; i++) {
+            let conf = document.createElement('div'); conf.className = 'confetti';
+            conf.style.left = Math.random() * 100 + 'vw'; conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            conf.style.animationDuration = (Math.random() * 2 + 2) + 's'; conf.style.animationDelay = (Math.random() * 0.5) + 's';
+            document.body.appendChild(conf); setTimeout(() => conf.remove(), 5000); 
+        }
+    }
+
+    window.joinGame = async function(isAutoJoin = false) {
+        let rawName = document.getElementById('userName').value.trim(); 
+        if(!rawName) return;
+        myName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        
+        if (!isAutoJoin) {
+            isSoundInited = true; playSfx(sfx.pop); 
+            if(!musicPlaying) { bgm.play().catch(()=>{}); musicPlaying = true; }
+        } else {
+            document.body.addEventListener('click', function initAudio() {
+                if (!musicPlaying) { bgm.play().catch(()=>{}); musicPlaying = true; isSoundInited = true; }
+                document.body.removeEventListener('click', initAudio);
+            }, { once: true });
+        }
+        
+        let storedData = localStorage.getItem(`rmcs_user_${roomId}`);
+        let joinedTime = Date.now();
+        let requestedKey = null;
+        if (storedData) {
+            try {
+                let parsed = JSON.parse(storedData);
+                if (parsed.name === myName) { requestedKey = parsed.key; joinedTime = parsed.joinedAt || Date.now(); }
+            } catch(e) {}
+        }
+        
+        const snap = await get(ref(db, `rooms/${roomId}/players`));
+        const currentPlayers = snap.val() || {};
+        const pKeys = Object.keys(currentPlayers);
+        
+        if (requestedKey && currentPlayers[requestedKey]) {
+            myKey = requestedKey; 
+        } else {
+            if (pKeys.length >= 4) {
+                if (!isAutoJoin) alert("Game is full! Exactly 4 players allowed.");
+                return;
+            }
+            myKey = 'user_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        localStorage.setItem(`rmcs_user_${roomId}`, JSON.stringify({ key: myKey, name: myName, joinedAt: joinedTime }));
+        
+        let displayUrl = window.location.href;
+        try {
+            const url = new URL(window.location.href); url.searchParams.set('room', roomId); displayUrl = url.href;
+            if (displayUrl.startsWith('blob:')) throw new Error('blob'); 
+        } catch(e) { displayUrl = `https://play-rmcs.com/?room=${roomId}`; }
+        document.getElementById('lobbyLinkInput').value = displayUrl;
+        
+        if (!window.connectionListenerAdded) {
+            window.connectionListenerAdded = true;
+            onValue(ref(db, ".info/connected"), (snap) => {
+                if (snap.val() === true && myKey) {
+                    const playerRef = ref(db, `rooms/${roomId}/players/${myKey}`);
+                    const onlineRef = ref(db, `rooms/${roomId}/players/${myKey}/online`);
+                    onDisconnect(playerRef).cancel();
+                    onDisconnect(onlineRef).set(false).then(() => {
+                        update(playerRef, { name: myName, joinedAt: joinedTime, online: true });
+                    });
+                }
+            });
+        }
+
+        onValue(ref(db, `rooms/${roomId}/players`), (snap) => {
+            globalPlayers = snap.val() || {};
+            const keys = Object.keys(globalPlayers);
+            
+            const onlineKeys = keys.filter(k => globalPlayers[k].online !== false);
+            if (onlineKeys.length > 0) {
+                const oldestKey = onlineKeys.sort((a,b) => globalPlayers[a].joinedAt - globalPlayers[b].joinedAt)[0];
+                amIHost = (oldestKey === myKey);
+            } else { amIHost = false; }
+            
+            renderLobby();
+            
+            if (keys.length === 4 && amIHost && gameState.phase === 'lobby') {
+                window.startRound(1);
+            }
+            if (gameState.phase !== 'login' && gameState.phase !== 'lobby') {
+                renderGameUI();
+            }
+        });
+
+        onValue(ref(db, `rooms/${roomId}/state`), (snap) => {
+            const s = snap.val();
+            if (s) {
+                let oldPhase = gameState.phase;
+                gameState = { 
+                    phase: s.phase || 'lobby', round: s.round || 1, scores: s.scores || {}, 
+                    roles: s.roles || {}, turnOrder: s.turnOrder || [], pickIndex: s.pickIndex || 0, 
+                    revealed: s.revealed || {}, wazirCorrect: s.wazirCorrect, suspectId: s.suspectId
+                };
+                
+                if (oldPhase !== gameState.phase) {
+                    if (gameState.phase === 'king_declaring') playSfx(sfx.start);
+                    else if (gameState.phase === 'round_result') {
+                        if (gameState.wazirCorrect) { playSfx(sfx.win); playSfx(sfx.cheer); } else playSfx(sfx.alert);
+                    }
+                    else if (gameState.phase === 'finished') { playSfx(sfx.win); playSfx(sfx.cheer); createConfetti(); }
+                    else if (gameState.phase === 'picking') playSfx(sfx.pop);
+                }
+                
+                handlePhaseRouting();
+            }
+        });
+
+        if (!isAutoJoin || gameState.phase === 'login') switchView('view-lobby'); 
+    }
+
+    const storedAutoJoinData = localStorage.getItem(`rmcs_user_${roomId}`);
+    if (storedAutoJoinData) {
+        try {
+            const parsedSession = JSON.parse(storedAutoJoinData);
+            if (parsedSession && parsedSession.name) {
+                document.getElementById('userName').value = parsedSession.name;
+                document.getElementById('view-login').classList.add('hidden');
+                setTimeout(() => joinGame(true), 50);
+            }
+        } catch(e) {}
+    }
+
+    function updateState(updates) { return update(ref(db, `rooms/${roomId}/state`), updates); }
+
+    function renderLobby() {
+        const grid = document.getElementById('lobbyPlayers'); grid.innerHTML = "";
+        const keys = Object.keys(globalPlayers);
+        document.getElementById('lobbyStatusText').innerText = `Waiting for players... (${keys.length}/4 joined)`;
+        
+        keys.forEach((id, i) => {
+            const isOffline = globalPlayers[id].online === false;
+            const style = isOffline ? 'opacity: 0.5;' : '';
+            grid.innerHTML += `<div class="p-badge" style="${style}"><div style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${COLORS[i]}; margin-right:6px;"></div>${globalPlayers[id].name}</div>`;
+        });
+    }
+
+    window.startRound = function(roundNum) {
+        if (!amIHost) return;
+        const pKeys = Object.keys(globalPlayers);
+        if (pKeys.length !== 4) return;
+        
+        let rolesArr = [...ROLES].sort(() => Math.random() - 0.5);
+        let assignedRoles = {}, initScores = (roundNum === 1) ? {} : gameState.scores;
+        
+        pKeys.forEach((pid, i) => { 
+            assignedRoles[pid] = rolesArr[i]; 
+            if (roundNum === 1) initScores[pid] = 0;
+        });
+
+        updateState({ 
+            phase: 'picking', round: roundNum, roles: assignedRoles, 
+            turnOrder: pKeys, pickIndex: 0, revealed: {}, scores: initScores,
+            wazirCorrect: null, suspectId: null
+        });
+    }
+
+    function handlePhaseRouting() {
+        if (gameState.phase === 'finished') {
+            switchView('view-result');
+            renderLeaderboard();
+        } else if (gameState.phase !== 'login' && gameState.phase !== 'lobby') {
+            switchView('view-game');
+            renderGameUI();
+            
+            // Auto-advance Host logic
+            if (amIHost && gameState.phase === 'round_result') {
+                setTimeout(() => {
+                    // Check if phase is still round_result (prevents duplicate triggers)
+                    get(ref(db, `rooms/${roomId}/state/phase`)).then(snap => {
+                        if (snap.val() === 'round_result') {
+                            if (gameState.round < 12) window.startRound(gameState.round + 1);
+                            else updateState({ phase: 'finished' });
+                        }
+                    });
+                }, 5000);
+            }
+        }
+    }
+
+    function renderGameUI() {
+        document.getElementById('roundIndicator').innerText = `ROUND ${gameState.round} / 12`;
+        const pids = Object.keys(globalPlayers);
+        
+        for (let i = 0; i < 4; i++) {
+            const quad = document.getElementById(`quadrant-${i}`);
+            const pid = pids[i];
+            if (!pid) continue;
+            
+            const p = globalPlayers[pid];
+            const isMe = pid === myKey;
+            const score = gameState.scores[pid] || 0;
+            const isOffline = p.online === false;
+            
+            let roleDisplay = '?';
+            let roleClass = '';
+            
+            if (gameState.phase === 'round_result' || gameState.phase === 'finished') {
+                roleDisplay = gameState.roles[pid];
+            } else if (isMe && gameState.revealed && gameState.revealed[myKey]) {
+                roleDisplay = gameState.roles[pid];
+            } else if (gameState.phase !== 'picking' && gameState.roles[pid] === 'Raja 👑' && gameState.phase !== 'king_declaring') {
+                roleDisplay = 'Raja 👑';
+            }
+
+            if (roleDisplay !== '?') roleClass = 'quad-role';
+
+            quad.style.opacity = isOffline ? '0.4' : '1';
+            quad.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="quad-dot" style="background:${COLORS[i]};"></div>
+                    <div class="quad-name">${p.name}</div>
+                </div>
+                <div class="quad-score">${score} pts</div>
+                <div class="${roleClass}" style="${roleDisplay === '?' ? 'opacity:0.3; font-size:40px; margin-top:10px;' : ''}">${roleDisplay}</div>
+            `;
+        }
+
+        renderHub();
+    }
+
+    function renderHub() {
+        const hub = document.getElementById('central-hub');
+        const pids = Object.keys(globalPlayers);
+        
+        hub.classList.remove('anim-pulse');
+
+        if (gameState.phase === 'picking') {
+            const currentPid = gameState.turnOrder[gameState.pickIndex];
+            const colorIdx = pids.indexOf(currentPid);
+            
+            hub.style.backgroundColor = `${COLORS[colorIdx]}66`; // 40% opacity
+            hub.style.borderColor = COLORS[colorIdx];
+            hub.classList.add('anim-pulse');
+            
+            if (myKey === currentPid) {
+                hub.innerHTML = `
+                    <div style="font-size:16px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Your Turn!</div>
+                    <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="pickChit()">Draw Chit</button>
+                `;
+            } else {
+                hub.innerHTML = `<div style="font-size:15px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Waiting for<br><span style="font-size:18px; color:${COLORS[colorIdx]}">${globalPlayers[currentPid]?.name}</span></div>`;
+            }
+        } 
+        else if (gameState.phase === 'king_declaring') {
+            hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
+            if (gameState.roles[myKey] === 'Raja 👑') {
+                hub.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:5px;">👑</div>
+                    <div style="font-size:15px; font-weight:800; margin-bottom:12px;">You are Raja!</div>
+                    <button class="btn-accent" style="padding:10px 15px; font-size:13px;" onclick="declareKing()">Mera Wazir Kaun Hai?</button>
+                `;
+            } else {
+                hub.innerHTML = `<div style="font-size:15px; font-weight:700;">Waiting for Raja...</div>`;
+            }
+        }
+        else if (gameState.phase === 'wazir_guessing') {
+            hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
+            
+            if (gameState.roles[myKey] === 'Wazir 🛡️') {
+                const candidates = pids.filter(p => gameState.roles[p] !== 'Raja 👑' && gameState.roles[p] !== 'Wazir 🛡️');
+                let btns = candidates.map(c => `<button class="btn-danger" style="margin:4px; padding:10px; width:100%; font-size:14px;" onclick="makeGuess('${c}')">${globalPlayers[c].name}</button>`).join('');
+                
+                hub.innerHTML = `
+                    <div style="font-size:14px; font-weight:800; margin-bottom:8px; line-height:1.2;">Hazir Raja Ji!<br><span style="font-size:12px; font-weight:500;">Who is Chor?</span></div>
+                    <div style="display:flex; flex-direction:column; width:100%;">${btns}</div>
+                `;
+            } else {
+                const wazirId = pids.find(p => gameState.roles[p] === 'Wazir 🛡️');
+                const wName = wazirId ? globalPlayers[wazirId].name : 'Wazir';
+                hub.innerHTML = `<div style="font-size:14px; font-weight:700; line-height:1.4;">Raja commands <br><span style="color:var(--warning); font-size:18px;">${wName}</span><br>to find the Chor!</div>`;
+            }
+        }
+        else if (gameState.phase === 'round_result') {
+            hub.style.backgroundColor = 'rgba(255,255,255,0.1)';
+            const wazirId = pids.find(p => gameState.roles[p] === 'Wazir 🛡️');
+            const wName = wazirId ? globalPlayers[wazirId].name : 'Wazir';
+            
+            if (gameState.wazirCorrect) {
+                hub.style.borderColor = 'var(--success)';
+                hub.innerHTML = `<div style="font-size:40px; margin-bottom:5px;">✅</div><div style="font-size:16px; font-weight:800; color:var(--success); line-height:1.2;">${wName}<br>Guessed Right!</div>`;
+            } else {
+                hub.style.borderColor = 'var(--primary)';
+                hub.innerHTML = `<div style="font-size:40px; margin-bottom:5px;">❌</div><div style="font-size:16px; font-weight:800; color:var(--primary); line-height:1.2;">${wName}<br>Failed!</div>`;
+            }
+        }
+    }
+
+    window.pickChit = function() {
+        if (gameState.phase !== 'picking') return;
+        playSfx(sfx.tick);
+        updateState({ [`revealed/${myKey}`]: true, pickIndex: gameState.pickIndex + 1 });
+        
+        if (gameState.pickIndex + 1 === 4) {
+            setTimeout(() => { if(amIHost) updateState({ phase: 'king_declaring' }); }, 1000);
+        }
+    }
+
+    window.declareKing = function() {
+        if (gameState.phase !== 'king_declaring' || gameState.roles[myKey] !== 'Raja 👑') return;
+        playSfx(sfx.pop);
+        updateState({ phase: 'wazir_guessing' });
+    }
+
+    window.makeGuess = function(suspectId) {
+        if (gameState.phase !== 'wazir_guessing' || gameState.roles[myKey] !== 'Wazir 🛡️') return;
+        playSfx(sfx.pop);
+        
+        const isCorrect = (gameState.roles[suspectId] === 'Chor 👺');
+        let newScores = { ...gameState.scores };
+        
+        for (let pid of Object.keys(globalPlayers)) {
+            let role = gameState.roles[pid];
+            let pts = 0;
+            if (role === 'Raja 👑') pts = 1000;
+            else if (role === 'Sipahi ⚔️') pts = 400;
+            else if (role === 'Wazir 🛡️') pts = isCorrect ? 700 : 0;
+            else if (role === 'Chor 👺') pts = isCorrect ? 0 : 700;
+            
+            newScores[pid] = (newScores[pid] || 0) + pts;
+        }
+        
+        updateState({ phase: 'round_result', scores: newScores, wazirCorrect: isCorrect, suspectId: suspectId });
+    }
+
+    function renderLeaderboard() {
+        const container = document.getElementById('leaderboard-container');
+        const pids = Object.keys(globalPlayers);
+        
+        const sorted = pids.sort((a, b) => (gameState.scores[b] || 0) - (gameState.scores[a] || 0));
+        
+        let html = '';
+        sorted.forEach((pid, i) => {
+            const medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''));
+            const color = COLORS[pids.indexOf(pid)];
+            html += `
+                <div class="leaderboard-row">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="width:25px; text-align:center;">${medal}</span>
+                        <div style="width:12px; height:12px; border-radius:50%; background:${color};"></div>
+                        <span>${globalPlayers[pid].name}</span>
+                    </div>
+                    <span style="color:var(--success);">${gameState.scores[pid] || 0}</span>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        if (amIHost) document.getElementById('btnPlayAgain').classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
