@@ -225,7 +225,7 @@
     }
 
     const COLORS = ['#FF3B30', '#34C759', '#FFCC00', '#007AFF']; // Red, Green, Yellow, Blue
-    const ROLES = ['Raja 👑', 'Wazir 🛡️', 'Santri ⚔️', 'Chor 👺'];
+    const ROLES = ['Raja 👑', 'Mantri 🛡️', 'Santri ⚔️', 'Chor 👺'];
 
     let myKey = null, myName = "", amIHost = false, globalPlayers = {};
     let gameState = { phase: 'login', round: 1, scores: {}, roles: {}, turnOrder: [], revealed: {}, wazirCorrect: null, suspectId: null };
@@ -541,13 +541,13 @@
                     <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="tossChits()">Toss Chits 📜</button>
                 `;
             } else {
-                hub.innerHTML = `<div style="font-size:15px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Waiting for<br><span style="font-size:18px; color:${COLORS[colorIdx]}">${globalPlayers[currentPid]?.name}</span></div>`;
+                hub.innerHTML = `<div style="font-size:15px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Waiting for<br><span style="font-size:18px; color:#ffffff">${globalPlayers[currentPid]?.name}</span></div>`;
             }
         } 
         else if (gameState.phase === 'chits_tossed') {
             hub.style.backgroundColor = `${COLORS[colorIdx]}66`; 
             hub.style.borderColor = COLORS[colorIdx];
-            hub.innerHTML = `<div style="font-size:20px; font-weight:900; animation: pulseHub 1s infinite; line-height: 1.4; text-shadow: 0 2px 5px rgba(0,0,0,0.8);">Tossing<br>Chits...</div>`;
+            hub.innerHTML = `<div style="font-size:20px; font-weight:900; animation: pulseHub 1s infinite; line-height: 1.4; text-shadow: 0 2px 5px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; text-align:center; height:100%; width:100%;">Tossing<br>Chits...</div>`;
         }
         else if (gameState.phase === 'king_declaring') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
@@ -555,7 +555,7 @@
                 hub.innerHTML = `
                     <div style="font-size:24px; margin-bottom:5px;">👑</div>
                     <div style="font-size:15px; font-weight:800; margin-bottom:12px;">You are Raja!</div>
-                    <button class="btn-accent" style="padding:10px 15px; font-size:13px;" onclick="declareKing()">Mera Wazir Kaun Hai?</button>
+                    <button class="btn-accent" style="padding:10px 15px; font-size:13px;" onclick="declareKing()">Mera Mantri Kaun Hai?</button>
                 `;
             } else {
                 hub.innerHTML = `<div style="font-size:15px; font-weight:700;">Waiting for Raja...</div>`;
@@ -564,8 +564,8 @@
         else if (gameState.phase === 'wazir_guessing') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
             
-            if (gameState.roles[myKey] === 'Wazir 🛡️') {
-                const candidates = pids.filter(p => gameState.roles[p] !== 'Raja 👑' && gameState.roles[p] !== 'Wazir 🛡️');
+            if (gameState.roles[myKey] === 'Mantri 🛡️') {
+                const candidates = pids.filter(p => gameState.roles[p] !== 'Raja 👑' && gameState.roles[p] !== 'Mantri 🛡️');
                 let btns = candidates.map(c => `<button class="btn-danger" style="margin:4px; padding:10px; width:100%; font-size:14px;" onclick="makeGuess('${c}')">${globalPlayers[c].name}</button>`).join('');
                 
                 hub.innerHTML = `
@@ -573,15 +573,16 @@
                     <div style="display:flex; flex-direction:column; width:100%;">${btns}</div>
                 `;
             } else {
-                const wazirId = pids.find(p => gameState.roles[p] === 'Wazir 🛡️');
-                const wName = wazirId ? globalPlayers[wazirId].name : 'Wazir';
-                hub.innerHTML = `<div style="font-size:14px; font-weight:700; line-height:1.4;">Raja commands <br><span style="color:var(--warning); font-size:18px;">${wName}</span><br>to find the Chor!</div>`;
+                const wazirId = pids.find(p => gameState.roles[p] === 'Mantri 🛡️');
+                const wName = wazirId ? globalPlayers[wazirId].name : 'Mantri';
+                const wColor = wazirId ? COLORS[pids.indexOf(wazirId)] : 'var(--warning)';
+                hub.innerHTML = `<div style="font-size:14px; font-weight:700; line-height:1.4;">Raja commands <br><span style="color:${wColor}; font-size:18px;">${wName}</span><br>to find the Chor!</div>`;
             }
         }
         else if (gameState.phase === 'round_result') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)';
-            const wazirId = pids.find(p => gameState.roles[p] === 'Wazir 🛡️');
-            const wName = wazirId ? globalPlayers[wazirId].name : 'Wazir';
+            const wazirId = pids.find(p => gameState.roles[p] === 'Mantri 🛡️');
+            const wName = wazirId ? globalPlayers[wazirId].name : 'Mantri';
             
             if (gameState.wazirCorrect) {
                 hub.style.borderColor = 'var(--success)';
@@ -648,7 +649,7 @@
     }
 
     window.makeGuess = function(suspectId) {
-        if (gameState.phase !== 'wazir_guessing' || gameState.roles[myKey] !== 'Wazir 🛡️') return;
+        if (gameState.phase !== 'wazir_guessing' || gameState.roles[myKey] !== 'Mantri 🛡️') return;
         playSfx(sfx.pop);
         
         const isCorrect = (gameState.roles[suspectId] === 'Chor 👺');
@@ -659,7 +660,7 @@
             let pts = 0;
             if (role === 'Raja 👑') pts = 1000;
             else if (role === 'Santri ⚔️') pts = 400;
-            else if (role === 'Wazir 🛡️') pts = isCorrect ? 700 : 0;
+            else if (role === 'Mantri 🛡️') pts = isCorrect ? 700 : 0;
             else if (role === 'Chor 👺') pts = isCorrect ? 0 : 700;
             
             newScores[pid] = (newScores[pid] || 0) + pts;
@@ -676,7 +677,7 @@
         
         let html = '';
         sorted.forEach((pid, i) => {
-            const medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : ''));
+            const medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '👎'));
             const color = COLORS[pids.indexOf(pid)];
             html += `
                 <div class="leaderboard-row">
