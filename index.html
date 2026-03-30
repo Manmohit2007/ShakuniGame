@@ -539,8 +539,8 @@
             } else if (gameState.phase === 'chits_tossed' || gameState.phase === 'king_declaring' || gameState.phase === 'wazir_guessing') {
                 if (isMe) {
                     roleDisplay = gameState.roles[pid];
-                } else if (gameState.phase === 'wazir_guessing' && gameState.roles[pid] === 'Raja 👑') {
-                    roleDisplay = 'Raja 👑';
+                } else if (gameState.phase === 'wazir_guessing' && (gameState.roles[pid] === 'Raja 👑' || gameState.roles[pid] === 'Mantri 🛡️')) {
+                    roleDisplay = gameState.roles[pid];
                 }
             }
 
