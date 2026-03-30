@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Raja Mantri Chor Santri</title>
+    <title>Raja • Mantri • Chor • Santri</title>
     <style>
         :root {
             --primary: #FF3B30; --success: #34C759; --accent: #007AFF; --warning: #FFCC00;
@@ -587,10 +587,11 @@
         else if (gameState.phase === 'king_declaring') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
             if (gameState.roles[myKey] === 'Raja 👑') {
+                const myColor = COLORS[pids.indexOf(myKey)];
                 hub.innerHTML = `
                     <div style="font-size:24px; margin-bottom:5px;">👑</div>
                     <div style="font-size:15px; font-weight:800; margin-bottom:12px;">You are Raja!</div>
-                    <button class="btn-accent" style="padding:10px 15px; font-size:13px;" onclick="window.declareKing()">Mera Mantri Kaun Hai?</button>
+                    <button class="btn-primary" style="padding:10px 15px; font-size:13px; background:${myColor}; border:2px solid rgba(255,255,255,0.5);" onclick="window.declareKing()">Mera Mantri Kaun Hai?</button>
                 `;
             } else {
                 hub.innerHTML = `<div style="font-size:15px; font-weight:700;">Waiting for Raja...</div>`;
