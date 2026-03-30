@@ -471,27 +471,26 @@
             clearTimeout(hostTimeout1);
             clearTimeout(hostTimeout2);
             
-            if (amIHost && gameState.phase === 'chits_tossed') {
-                // Extended timeout to 3000ms to allow all sequential chits to finish animating
+            if (gameState.phase === 'chits_tossed') {
+                // Distributed timeout: Host acts at 3.2s. If Host drops/lags, others push the game forward at 5s.
+                // Removed the blocking get() call which caused the game to hang on mobile connections
+                const delay = amIHost ? 3200 : 5000;
                 hostTimeout1 = setTimeout(() => {
-                    get(ref(db, `rooms/${roomId}/state/phase`)).then(snap => {
-                        if (snap.val() === 'chits_tossed') {
-                            updateState({ phase: 'king_declaring' });
-                        }
-                    });
-                }, 3000); 
+                    if (gameState.phase === 'chits_tossed') {
+                        updateState({ phase: 'king_declaring' });
+                    }
+                }, delay); 
             }
 
-            // Auto-advance Host logic
-            if (amIHost && gameState.phase === 'round_result') {
+            if (gameState.phase === 'round_result') {
+                // Distributed timeout for round results as well
+                const delay = amIHost ? 5000 : 7000;
                 hostTimeout2 = setTimeout(() => {
-                    get(ref(db, `rooms/${roomId}/state/phase`)).then(snap => {
-                        if (snap.val() === 'round_result') {
-                            if (gameState.round < 12) window.startRound(gameState.round + 1);
-                            else updateState({ phase: 'finished' });
-                        }
-                    });
-                }, 5000);
+                    if (gameState.phase === 'round_result') {
+                        if (gameState.round < 12) window.startRound(gameState.round + 1);
+                        else updateState({ phase: 'finished' });
+                    }
+                }, delay);
             }
         }
     }
@@ -591,7 +590,7 @@
                 hub.innerHTML = `
                     <div style="font-size:24px; margin-bottom:5px;">👑</div>
                     <div style="font-size:15px; font-weight:800; margin-bottom:12px;">You are Raja!</div>
-                    <button class="btn-primary" style="padding:10px 15px; font-size:13px; background:${myColor}; border:2px solid rgba(255,255,255,0.5);" onclick="window.declareKing()">Mera Mantri Kaun Hai?</button>
+                    <button class="btn-primary" style="padding:10px 15px; font-size:13px; background:${myColor}; color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.9); border:2px solid rgba(255,255,255,0.5);" onclick="window.declareKing()">Mera Mantri Kaun Hai?</button>
                 `;
             } else {
                 hub.innerHTML = `<div style="font-size:15px; font-weight:700;">Waiting for Raja...</div>`;
