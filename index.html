@@ -602,10 +602,10 @@
             
             if (gameState.roles[myKey] === 'Mantri 🛡️') {
                 const candidates = pids.filter(p => gameState.roles[p] !== 'Raja 👑' && gameState.roles[p] !== 'Mantri 🛡️');
-                // Color match the buttons to the suspect's quadrant color
+                // Color match the buttons to the suspect's quadrant color without the red glow
                 let btns = candidates.map(c => {
                     const cColor = COLORS[pids.indexOf(c)];
-                    return `<button class="btn-danger" style="margin:4px; padding:10px; width:100%; font-size:14px; background:${cColor}; border:2px solid rgba(255,255,255,0.5);" onclick="window.makeGuess('${c}')">${globalPlayers[c].name}</button>`;
+                    return `<button style="margin:4px; padding:10px; width:100%; font-size:14px; background:${cColor}; color:#fff; border:2px solid rgba(255,255,255,0.5); box-shadow:0 4px 12px rgba(0,0,0,0.25);" onclick="window.makeGuess('${c}')">${globalPlayers[c].name}</button>`;
                 }).join('');
                 
                 hub.innerHTML = `
