@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Raja Mantri Chor Sipahi</title>
+    <title>Raja Mantri Chor Santri</title>
     <style>
         :root {
             --primary: #FF3B30; --success: #34C759; --accent: #007AFF; --warning: #FFCC00;
@@ -141,7 +141,7 @@
 <div class="app-container">
     <div id="view-login" class="view-centered">
         <h1>Shakuni</h1>
-        <div class="subtitle">King • Minister • Thief • Soldier</div>
+        <div class="subtitle">Raja Mantri Chor Santri</div>
         <div class="glass-card">
             <input type="text" id="userName" placeholder="Enter Your Nickname" maxlength="12">
             <button class="btn-primary" onclick="joinGame()">Enter Lobby</button>
@@ -216,7 +216,7 @@
     }
 
     const COLORS = ['#FF3B30', '#34C759', '#FFCC00', '#007AFF']; // Red, Green, Yellow, Blue
-    const ROLES = ['Raja 👑', 'Wazir 🛡️', 'Sipahi ⚔️', 'Chor 👺'];
+    const ROLES = ['Raja 👑', 'Wazir 🛡️', 'Santri ⚔️', 'Chor 👺'];
 
     let myKey = null, myName = "", amIHost = false, globalPlayers = {};
     let gameState = { phase: 'login', round: 1, scores: {}, roles: {}, turnOrder: [], revealed: {}, wazirCorrect: null, suspectId: null };
@@ -649,7 +649,7 @@
             let role = gameState.roles[pid];
             let pts = 0;
             if (role === 'Raja 👑') pts = 1000;
-            else if (role === 'Sipahi ⚔️') pts = 400;
+            else if (role === 'Santri ⚔️') pts = 400;
             else if (role === 'Wazir 🛡️') pts = isCorrect ? 700 : 0;
             else if (role === 'Chor 👺') pts = isCorrect ? 0 : 700;
             
