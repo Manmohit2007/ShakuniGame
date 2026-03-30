@@ -140,7 +140,7 @@
 
 <div class="app-container">
     <div id="view-login" class="view-centered">
-        <h1>RMCS</h1>
+        <h1>Shakuni</h1>
         <div class="subtitle">King • Minister • Thief • Soldier</div>
         <div class="glass-card">
             <input type="text" id="userName" placeholder="Enter Your Nickname" maxlength="12">
@@ -161,6 +161,7 @@
             <div style="font-size: 40px; text-align: center; margin-bottom: 10px; text-shadow:none;">👑 🛡️ ⚔️ 👺</div>
             <h2 id="lobbyStatusText" style="font-size: 18px; margin-bottom: 20px; text-align: center;">Waiting for 4 players...</h2>
             <div class="player-grid" id="lobbyPlayers"></div>
+            <button id="btnLobbyStart" class="btn-primary hidden" style="margin-top: 10px;" onclick="startRound(1)">Start Game</button>
         </div>
     </div>
 
@@ -329,7 +330,7 @@
             
             renderLobby();
             
-            if (keys.length === 4 && amIHost && (gameState.phase === 'login' || gameState.phase === 'lobby')) {
+            if (onlineKeys.length === 4 && amIHost && (gameState.phase === 'login' || gameState.phase === 'lobby')) {
                 window.startRound(1);
             }
             if (gameState.phase !== 'login' && gameState.phase !== 'lobby') {
@@ -381,19 +382,33 @@
     function renderLobby() {
         const grid = document.getElementById('lobbyPlayers'); grid.innerHTML = "";
         const keys = Object.keys(globalPlayers);
-        document.getElementById('lobbyStatusText').innerText = `Waiting for players... (${keys.length}/4 joined)`;
+        const activeKeys = keys.filter(k => globalPlayers[k].online !== false);
         
-        keys.forEach((id, i) => {
-            const isOffline = globalPlayers[id].online === false;
-            const style = isOffline ? 'opacity: 0.5;' : '';
-            grid.innerHTML += `<div class="p-badge" style="${style}"><div style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${COLORS[i]}; margin-right:6px;"></div>${globalPlayers[id].name}</div>`;
+        document.getElementById('lobbyStatusText').innerText = `Waiting for players... (${activeKeys.length}/4 joined)`;
+        
+        activeKeys.forEach((id, i) => {
+            const style = '';
+            grid.innerHTML += `<div class="p-badge" style="${style}"><div style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${COLORS[i % COLORS.length]}; margin-right:6px;"></div>${globalPlayers[id].name}</div>`;
         });
+
+        const btnStart = document.getElementById('btnLobbyStart');
+        if (btnStart) {
+            if (amIHost && activeKeys.length === 4) {
+                btnStart.classList.remove('hidden');
+            } else {
+                btnStart.classList.add('hidden');
+            }
+        }
     }
 
     window.startRound = function(roundNum) {
         if (!amIHost) return;
-        const pKeys = Object.keys(globalPlayers);
-        if (pKeys.length !== 4) return;
+        
+        const activePKeys = Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
+        if (activePKeys.length !== 4) {
+            alert("Exactly 4 players must be online to play!");
+            return;
+        }
         
         // Fisher-Yates Shuffle for true mathematical randomness
         let rolesArr = [...ROLES];
@@ -404,14 +419,14 @@
         
         let assignedRoles = {}, initScores = (roundNum === 1) ? {} : gameState.scores;
         
-        pKeys.forEach((pid, i) => { 
+        activePKeys.forEach((pid, i) => { 
             assignedRoles[pid] = rolesArr[i]; 
             if (roundNum === 1) initScores[pid] = 0;
         });
 
         updateState({ 
             phase: 'picking', round: roundNum, roles: assignedRoles, 
-            turnOrder: pKeys, revealed: {}, scores: initScores,
+            turnOrder: activePKeys, revealed: {}, scores: initScores,
             wazirCorrect: null, suspectId: null
         });
     }
@@ -451,12 +466,15 @@
 
     function renderGameUI() {
         document.getElementById('roundIndicator').innerText = `ROUND ${gameState.round} / 12`;
-        const pids = Object.keys(globalPlayers);
+        const pids = (gameState.turnOrder && gameState.turnOrder.length === 4) ? gameState.turnOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
         
         for (let i = 0; i < 4; i++) {
             const quad = document.getElementById(`quadrant-${i}`);
             const pid = pids[i];
-            if (!pid) continue;
+            if (!pid || !globalPlayers[pid]) {
+                quad.innerHTML = '';
+                continue;
+            }
             
             const p = globalPlayers[pid];
             const isMe = pid === myKey;
@@ -506,9 +524,9 @@
             hub.style.borderColor = COLORS[colorIdx];
             hub.classList.add('anim-pulse');
             
-            if (myKey === currentPid) {
+            if (myKey === currentPid || amIHost) {
                 hub.innerHTML = `
-                    <div style="font-size:16px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Your Turn!</div>
+                    <div style="font-size:16px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">${myKey === currentPid ? 'Your Turn!' : 'Host Override'}</div>
                     <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="tossChits()">Toss Chits 📜</button>
                 `;
             } else {
