@@ -512,14 +512,16 @@
 
     function renderHub() {
         const hub = document.getElementById('central-hub');
-        const pids = Object.keys(globalPlayers);
+        const pids = (gameState.turnOrder && gameState.turnOrder.length === 4) ? gameState.turnOrder : Object.keys(globalPlayers).filter(k => globalPlayers[k].online !== false);
         
         hub.classList.remove('anim-pulse');
 
+        // Determine whose turn it is to toss chits based on the current round (rotates every round)
+        const currentTosserIndex = (gameState.round - 1) % 4;
+        const currentPid = (gameState.turnOrder && gameState.turnOrder.length > 0) ? gameState.turnOrder[currentTosserIndex] : pids[0];
+        const colorIdx = pids.indexOf(currentPid) !== -1 ? pids.indexOf(currentPid) : 0;
+
         if (gameState.phase === 'picking') {
-            const currentPid = gameState.turnOrder[0];
-            const colorIdx = pids.indexOf(currentPid);
-            
             hub.style.backgroundColor = `${COLORS[colorIdx]}66`; // 40% opacity
             hub.style.borderColor = COLORS[colorIdx];
             hub.classList.add('anim-pulse');
@@ -534,8 +536,9 @@
             }
         } 
         else if (gameState.phase === 'chits_tossed') {
-            hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
-            hub.innerHTML = `<div style="font-size:16px; font-weight:800; animation: pulseHub 1s infinite; line-height: 1.4;">Tossing<br>Chits...</div>`;
+            hub.style.backgroundColor = `${COLORS[colorIdx]}66`; 
+            hub.style.borderColor = COLORS[colorIdx];
+            hub.innerHTML = `<div style="font-size:20px; font-weight:900; animation: pulseHub 1s infinite; line-height: 1.4; text-shadow: 0 2px 5px rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; width:100%; height:100%;">Tossing<br>Chits...</div>`;
         }
         else if (gameState.phase === 'king_declaring') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
