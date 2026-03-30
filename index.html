@@ -119,6 +119,8 @@
         @keyframes pulseHub { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }
         .anim-pulse { animation: pulseHub 1.5s infinite ease-in-out; }
 
+        .chit-anim { position: fixed; font-size: 40px; z-index: 1000; transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1); pointer-events: none; }
+
         @keyframes confettiFall { 0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; } }
         .confetti { position: absolute; width: 12px; height: 12px; z-index: 9999; pointer-events: none; border-radius: 2px; animation: confettiFall linear forwards; }
         
@@ -216,7 +218,7 @@
     const ROLES = ['Raja 👑', 'Wazir 🛡️', 'Sipahi ⚔️', 'Chor 👺'];
 
     let myKey = null, myName = "", amIHost = false, globalPlayers = {};
-    let gameState = { phase: 'login', round: 1, scores: {}, roles: {}, turnOrder: [], pickIndex: 0, revealed: {}, wazirCorrect: null, suspectId: null };
+    let gameState = { phase: 'login', round: 1, scores: {}, roles: {}, turnOrder: [], revealed: {}, wazirCorrect: null, suspectId: null };
     
     let musicPlaying = false, isSoundInited = false;
     const bgm = document.getElementById('bgMusic'); bgm.volume = 0.15; 
@@ -402,7 +404,7 @@
 
         updateState({ 
             phase: 'picking', round: roundNum, roles: assignedRoles, 
-            turnOrder: pKeys, pickIndex: 0, revealed: {}, scores: initScores,
+            turnOrder: pKeys, revealed: {}, scores: initScores,
             wazirCorrect: null, suspectId: null
         });
     }
@@ -415,16 +417,40 @@
             switchView('view-game');
             renderGameUI();
             
-            // Auto-advance Host logic
-            if (amIHost && gameState.phase === 'round_result') {
+            if (amIHost && gameState.phase === 'chits_tossed') {
                 setTimeout(() => {
-                    // Check if phase is still round_result (prevents duplicate triggers)
                     get(ref(db, `rooms/${roomId}/state/phase`)).then(snap => {
-                        if (snap.val() === 'round_result') {
-                            if (gameState.round < 12) window.startRound(gameState.round + 1);
-                            else updateState({ phase: 'finished' });
+                        if (snap.val() === 'chits_tossed') {
+                            updateState({ phase: 'king_declaring' });
                         }
                     });
+                }, 1500);
+            }
+
+            // Auto-advance Host logic
+            if (amIHost && gameState.phase === 'round_result') {
+        onValue(ref(db, `rooms/${roomId}/state`), (snap) => {
+            const s = snap.val();
+            if (s) {
+                let oldPhase = gameState.phase;
+                gameState = { 
+                    phase: s.phase || 'lobby', round: s.round || 1, scores: s.scores || {}, 
+                    roles: s.roles || {}, turnOrder: s.turnOrder || [], 
+                    revealed: s.revealed || {}, wazirCorrect: s.wazirCorrect, suspectId: s.suspectId
+                };
+                
+                if (oldPhase !== gameState.phase) {
+                    if (gameState.phase === 'king_declaring') playSfx(sfx.start);
+                    else if (gameState.phase === 'round_result') {
+                        if (gameState.wazirCorrect) { playSfx(sfx.win); playSfx(sfx.cheer); } else playSfx(sfx.alert);
+                    }
+                    else if (gameState.phase === 'finished') { playSfx(sfx.win); playSfx(sfx.cheer); createConfetti(); }
+                    else if (gameState.phase === 'chits_tossed') { triggerChitAnimation(); }
+                }
+                
+                handlePhaseRouting();
+            }
+        });
                 }, 5000);
             }
         }
@@ -449,10 +475,12 @@
             
             if (gameState.phase === 'round_result' || gameState.phase === 'finished') {
                 roleDisplay = gameState.roles[pid];
-            } else if (isMe && gameState.revealed && gameState.revealed[myKey]) {
-                roleDisplay = gameState.roles[pid];
-            } else if (gameState.phase !== 'picking' && gameState.roles[pid] === 'Raja 👑' && gameState.phase !== 'king_declaring') {
-                roleDisplay = 'Raja 👑';
+            } else if (gameState.phase === 'chits_tossed' || gameState.phase === 'king_declaring' || gameState.phase === 'wazir_guessing') {
+                if (isMe) {
+                    roleDisplay = gameState.roles[pid];
+                } else if (gameState.phase === 'wazir_guessing' && gameState.roles[pid] === 'Raja 👑') {
+                    roleDisplay = 'Raja 👑';
+                }
             }
 
             if (roleDisplay !== '?') roleClass = 'quad-role';
@@ -478,7 +506,7 @@
         hub.classList.remove('anim-pulse');
 
         if (gameState.phase === 'picking') {
-            const currentPid = gameState.turnOrder[gameState.pickIndex];
+            const currentPid = gameState.turnOrder[0];
             const colorIdx = pids.indexOf(currentPid);
             
             hub.style.backgroundColor = `${COLORS[colorIdx]}66`; // 40% opacity
@@ -488,12 +516,16 @@
             if (myKey === currentPid) {
                 hub.innerHTML = `
                     <div style="font-size:16px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Your Turn!</div>
-                    <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="pickChit()">Draw Chit</button>
+                    <button class="btn-primary" style="padding:12px; font-size:15px; background:${COLORS[colorIdx]}; border:2px solid #fff;" onclick="tossChits()">Toss Chits 📜</button>
                 `;
             } else {
                 hub.innerHTML = `<div style="font-size:15px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,0.8);">Waiting for<br><span style="font-size:18px; color:${COLORS[colorIdx]}">${globalPlayers[currentPid]?.name}</span></div>`;
             }
         } 
+        else if (gameState.phase === 'chits_tossed') {
+            hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
+            hub.innerHTML = `<div style="font-size:16px; font-weight:800; animation: pulseHub 1s infinite;">Distributing...</div>`;
+        }
         else if (gameState.phase === 'king_declaring') {
             hub.style.backgroundColor = 'rgba(255,255,255,0.1)'; hub.style.borderColor = 'var(--glass-border)';
             if (gameState.roles[myKey] === 'Raja 👑') {
@@ -538,14 +570,43 @@
         }
     }
 
-    window.pickChit = function() {
-        if (gameState.phase !== 'picking') return;
-        playSfx(sfx.tick);
-        updateState({ [`revealed/${myKey}`]: true, pickIndex: gameState.pickIndex + 1 });
+    function triggerChitAnimation() {
+        playSfx(sfx.tick); 
+        const hub = document.getElementById('central-hub');
+        const hubRect = hub.getBoundingClientRect();
         
-        if (gameState.pickIndex + 1 === 4) {
-            setTimeout(() => { if(amIHost) updateState({ phase: 'king_declaring' }); }, 1000);
+        for(let i=0; i<4; i++) {
+            const quad = document.getElementById(`quadrant-${i}`);
+            if (!quad) continue;
+            const quadRect = quad.getBoundingClientRect();
+            
+            const chit = document.createElement('div');
+            chit.className = 'chit-anim';
+            chit.innerText = '📜';
+            chit.style.left = (hubRect.left + hubRect.width/2) + 'px';
+            chit.style.top = (hubRect.top + hubRect.height/2) + 'px';
+            chit.style.transform = 'translate(-50%, -50%)';
+            document.body.appendChild(chit);
+            
+            chit.getBoundingClientRect(); // force reflow
+            
+            setTimeout(() => {
+                chit.style.left = (quadRect.left + quadRect.width/2) + 'px';
+                chit.style.top = (quadRect.top + quadRect.height/2) + 'px';
+                chit.style.transform = 'translate(-50%, -50%) scale(0.2) rotate(360deg)';
+                chit.style.opacity = '0';
+            }, 50);
+            
+            setTimeout(() => { 
+                chit.remove(); 
+                if(i === Object.keys(globalPlayers).indexOf(myKey)) playSfx(sfx.pop);
+            }, 650);
         }
+    }
+
+    window.tossChits = function() {
+        if (gameState.phase !== 'picking') return;
+        updateState({ phase: 'chits_tossed' });
     }
 
     window.declareKing = function() {
