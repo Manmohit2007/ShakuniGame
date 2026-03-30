@@ -327,7 +327,7 @@
             
             renderLobby();
             
-            if (keys.length === 4 && amIHost && gameState.phase === 'lobby') {
+            if (keys.length === 4 && amIHost && (gameState.phase === 'login' || gameState.phase === 'lobby')) {
                 window.startRound(1);
             }
             if (gameState.phase !== 'login' && gameState.phase !== 'lobby') {
