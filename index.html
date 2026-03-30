@@ -193,7 +193,7 @@
             <div style="font-size: 70px; margin-bottom: 10px;">🏆</div>
             <h2 style="font-size: 28px; margin-bottom: 20px; color: #FFD700;">Game Over!</h2>
             <div id="leaderboard-container" style="background: rgba(0,0,0,0.3); border-radius: 16px; margin-bottom: 25px; text-shadow: none;"></div>
-            <button id="btnPlayAgain" class="btn-primary hidden" onclick="window.startRound(1)">Play Again (Host)</button>
+            <button id="btnPlayAgain" class="btn-primary hidden" onclick="window.startRound(1)">Play Again</button>
         </div>
     </div>
 </div>
@@ -603,7 +603,7 @@
                 hub.innerHTML = `
                     <div style="font-size:24px; margin-bottom:5px;">👑</div>
                     <div style="font-size:15px; font-weight:800; margin-bottom:12px;">You are Raja!</div>
-                    <button class="btn-primary" style="padding:10px 15px; font-size:13px; background:${myColor}; color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.9); border:2px solid rgba(255,255,255,0.5);" onclick="window.declareKing()">Mera Mantri Kaun Hai?</button>
+                    <button class="btn-primary" style="padding:10px 15px; font-size:13px; background:${myColor}; color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.9); box-shadow:0 6px 16px rgba(0,0,0,0.4); border:2px solid rgba(255,255,255,0.5);" onclick="window.declareKing()">Mera Mantri Kaun Hai?</button>
                 `;
             } else {
                 hub.innerHTML = `<div style="font-size:15px; font-weight:700;">Waiting for Raja...</div>`;
